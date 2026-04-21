@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Tech.Care HealthCare Dashboard - Patient monitoring and diagnosis history">
+  <title>Tech.Care - HealthCare Dashboard</title>
+
+  <!-- Resource Hints: tell browser to open connections early -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="dns-prefetch" href="https://fedskillstest.coalitiontechnologies.workers.dev">
+  <link rel="dns-prefetch" href="https://fedskillstest.ct.digital">
+
+  <!-- Google Font: Manrope (display=swap prevents render block) -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Chart.js: defer so it doesn't block HTML parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+
+  <!-- ============================================ -->
+  <!-- ERROR TOAST (non-blocking, bottom-right)     -->
+  <!-- ============================================ -->
+
+  <div id="error-overlay" class="error-overlay hidden">
+    <div class="error-content">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      <h2>Failed to load data</h2>
+      <p id="error-message">An error occurred while fetching patient data.</p>
+      <button id="retry-btn" onclick="init()">Retry</button>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- TOP NAVIGATION HEADER                        -->
+  <!-- ============================================ -->
+  <header id="main-header" class="header">
+    <div class="header-inner">
+      <!-- Logo -->
+      <div class="logo">
+        <svg class="logo-icon" width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 8 L28 52 L50 40 L72 52 Z" fill="#01F0D0"/>
+          <path d="M28 52 L50 92 L50 40 Z" fill="#01F0D0" opacity="0.7"/>
+          <path d="M72 52 L50 92 L50 40 Z" fill="#01F0D0" opacity="0.45"/>
+        </svg>
+        <span class="logo-text">Tech.Care</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="#" class="nav-item" id="nav-overview">
+          <span class="material-icons nav-icon">home</span>
+          <span>Overview</span>
+        </a>
+        <a href="#" class="nav-item active" id="nav-patients">
+          <span class="material-icons nav-icon">group</span>
+          <span>Patients</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-schedule">
+          <span class="material-icons nav-icon">calendar_today</span>
+          <span>Schedule</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-message">
+          <span class="material-icons nav-icon">chat_bubble</span>
+          <span>Message</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-transactions">
+          <span class="material-icons nav-icon">credit_card</span>
+          <span>Transactions</span>
+        </a>
+      </nav>
+
+      <!-- Doctor Profile -->
+      <div class="doctor-profile">
+        <!-- Fallback avatar if photo fails -->
+        <div class="doctor-avatar-wrapper">
+          <span class="material-icons doctor-avatar-icon">account_circle</span>
+        </div>
+        <div class="doctor-info">
+          <span class="doctor-name">Dr. Jose Simmons</span>
+          <span class="doctor-role">General Practitioner</span>
+        </div>
+        <div class="header-divider"></div>
+        <button class="icon-btn" aria-label="Settings">
+          <span class="material-icons" style="font-size:20px;color:#707070">settings</span>
+        </button>
+        <button class="icon-btn" aria-label="More options">
+          <span class="material-icons" style="font-size:20px;color:#707070">more_vert</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================ -->
+  <!-- MAIN CONTENT AREA                            -->
+  <!-- ============================================ -->
+  <main class="dashboard">
+    <!-- ======== LEFT SIDEBAR: Patient List ======== -->
+    <aside class="patients-sidebar" id="patients-sidebar">
+      <div class="sidebar-header">
+        <h1>Patients</h1>
+        <button class="icon-btn" aria-label="Search patients">
+          <span class="material-icons" style="font-size:20px;color:#707070">search</span>
+        </button>
+      </div>
+      <ul class="patient-list" id="patient-list">
+        <!-- Skeleton rows shown while data loads -->
+        <li class="patient-item skeleton-item"><div class="skel skel-avatar"></div><div class="skel-text"><div class="skel skel-line"></div><div class="skel skel-line short"></div></div></li>
+        <li class="patient-item skeleton-item"><div class="skel skel-avatar"></div><div class="skel-text"><div class="skel skel-line"></div><div class="skel skel-line short"></div></div></li>
+        <li class="patient-item skeleton-item"><div class="skel skel-avatar"></div><div class="skel-text"><div class="skel skel-line"></div><div class="skel skel-line short"></div></div></li>
+        <li class="patient-item skeleton-item"><div class="skel skel-avatar"></div><div class="skel-text"><div class="skel skel-line"></div><div class="skel skel-line short"></div></div></li>
+        <li class="patient-item skeleton-item"><div class="skel skel-avatar"></div><div class="skel-text"><div class="skel skel-line"></div><div class="skel skel-line short"></div></div></li>
+      </ul>
+    </aside>
+
+    <!-- ======== CENTER: Diagnosis & Vitals ======== -->
+    <section class="main-content" id="main-content">
+      <!-- Diagnosis History Section -->
+      <div class="card diagnosis-history-card">
+        <h2 class="section-title">Diagnosis History</h2>
+
+        <!-- Blood Pressure Chart Container -->
+        <div class="bp-chart-container">
+          <div class="bp-chart-wrapper">
+            <div class="bp-chart-header">
+              <h3 class="bp-chart-title">Blood Pressure</h3>
+              <div class="bp-chart-period">
+                <span>Last 6 months</span>
+                <span class="material-icons" style="font-size:16px">expand_more</span>
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper">
+              <canvas id="bp-chart" aria-label="Blood pressure chart showing systolic and diastolic values over time"></canvas>
+            </div>
+          </div>
+
+          <!-- BP Legend / Values -->
+          <div class="bp-legend">
+            <div class="bp-legend-item">
+              <div class="bp-legend-dot systolic-dot"></div>
+              <span class="bp-legend-label">Systolic</span>
+            </div>
+            <span class="bp-value" id="systolic-value">160</span>
+            <div class="bp-level">
+              <span class="material-icons bp-arrow" id="systolic-arrow">arrow_upward</span>
+              <span id="systolic-level">Higher than Average</span>
+            </div>
+            <div class="bp-legend-divider"></div>
+            <div class="bp-legend-item">
+              <div class="bp-legend-dot diastolic-dot"></div>
+              <span class="bp-legend-label">Diastolic</span>
+            </div>
+            <span class="bp-value" id="diastolic-value">78</span>
+            <div class="bp-level">
+              <span class="material-icons bp-arrow" id="diastolic-arrow">arrow_downward</span>
+              <span id="diastolic-level">Lower than Average</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vital Signs Cards -->
+      <div class="vitals-grid">
+        <!-- Respiratory Rate -->
+        <div class="vital-card respiratory">
+          <div class="vital-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 8C24 8 10 14 10 26C10 31 13 35 18 36C18 36 18 40 22 40C26 40 26 36 26 36C26 36 28 38 30 38C34 38 38 34 38 30C38 22 24 8 24 8Z" fill="#5BA4CF" opacity="0.85"/>
+              <path d="M24 8C24 8 24 20 24 28" stroke="#3A7FBF" stroke-width="2" stroke-linecap="round"/>
+              <path d="M18 22C15 24 13 28 14 32" stroke="#3A7FBF" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M30 22C33 24 35 28 34 32" stroke="#3A7FBF" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="vital-label">Respiratory Rate</span>
+          <span class="vital-value" id="respiratory-value">20 bpm</span>
+          <span class="vital-status" id="respiratory-status">Normal</span>
+        </div>
+        <!-- Temperature -->
+        <div class="vital-card temperature">
+          <div class="vital-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="20" y="8" width="8" height="24" rx="4" fill="#E8A0A0"/>
+              <circle cx="24" cy="36" r="7" fill="#E05C5C"/>
+              <rect x="22" y="10" width="4" height="20" rx="2" fill="#E05C5C" opacity="0.6"/>
+              <line x1="28" y1="16" x2="32" y2="16" stroke="#E05C5C" stroke-width="2" stroke-linecap="round"/>
+              <line x1="28" y1="21" x2="32" y2="21" stroke="#E05C5C" stroke-width="2" stroke-linecap="round"/>
+              <line x1="28" y1="26" x2="32" y2="26" stroke="#E05C5C" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="vital-label">Temperature</span>
+          <span class="vital-value" id="temperature-value">98.6°F</span>
+          <span class="vital-status" id="temperature-status">Normal</span>
+        </div>
+        <!-- Heart Rate -->
+        <div class="vital-card heart-rate">
+          <div class="vital-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 38C24 38 8 28 8 18C8 13 12 9 17 9C20 9 23 11 24 13C25 11 28 9 31 9C36 9 40 13 40 18C40 28 24 38 24 38Z" fill="#E05C8A"/>
+              <polyline points="12,22 17,22 20,16 24,28 27,20 30,22 36,22" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="vital-label">Heart Rate</span>
+          <span class="vital-value" id="heart-rate-value">78 bpm</span>
+          <span class="vital-status" id="heart-rate-status">Lower than Average</span>
+        </div>
+      </div>
+
+      <!-- Diagnostic List Table -->
+      <div class="card diagnostic-list-card">
+        <h2 class="section-title">Diagnostic List</h2>
+        <div class="table-wrapper">
+          <table class="diagnostic-table" id="diagnostic-table">
+            <thead>
+              <tr>
+                <th>Problem/Diagnosis</th>
+                <th>Description</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="diagnostic-tbody">
+              <!-- Dynamically populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== RIGHT SIDEBAR: Patient Profile & Lab Results ======== -->
+    <aside class="profile-sidebar" id="profile-sidebar">
+      <!-- Patient Profile Card -->
+      <div class="card profile-card">
+        <img src="" alt="Patient photo" class="profile-photo" id="profile-photo" width="200" height="200">
+        <h2 class="profile-name" id="profile-name">Jessica Taylor</h2>
+
+        <div class="profile-details">
+          <div class="profile-detail-row">
+            <div class="profile-icon-wrapper">
+              <span class="material-icons profile-icon">cake</span>
+            </div>
+            <div class="profile-detail-text">
+              <span class="profile-detail-label">Date Of Birth</span>
+              <span class="profile-detail-value" id="profile-dob">August 23, 1996</span>
+            </div>
+          </div>
+          <div class="profile-detail-row">
+            <div class="profile-icon-wrapper">
+              <span class="material-icons profile-icon">female</span>
+            </div>
+            <div class="profile-detail-text">
+              <span class="profile-detail-label">Gender</span>
+              <span class="profile-detail-value" id="profile-gender">Female</span>
+            </div>
+          </div>
+          <div class="profile-detail-row">
+            <div class="profile-icon-wrapper">
+              <span class="material-icons profile-icon">phone</span>
+            </div>
+            <div class="profile-detail-text">
+              <span class="profile-detail-label">Contact Info.</span>
+              <span class="profile-detail-value" id="profile-phone">(415) 555-1234</span>
+            </div>
+          </div>
+          <div class="profile-detail-row">
+            <div class="profile-icon-wrapper">
+              <span class="material-icons profile-icon">phone_in_talk</span>
+            </div>
+            <div class="profile-detail-text">
+              <span class="profile-detail-label">Emergency Contacts</span>
+              <span class="profile-detail-value" id="profile-emergency">(415) 555-5678</span>
+            </div>
+          </div>
+          <div class="profile-detail-row">
+            <div class="profile-icon-wrapper">
+              <span class="material-icons profile-icon">verified_user</span>
+            </div>
+            <div class="profile-detail-text">
+              <span class="profile-detail-label">Insurance Provider</span>
+              <span class="profile-detail-value" id="profile-insurance">Sunrise Health Assurance</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="show-all-btn">Show All Information</button>
+      </div>
+
+      <!-- Lab Results Card -->
+      <div class="card lab-results-card">
+        <h2 class="section-title">Lab Results</h2>
+        <ul class="lab-results-list" id="lab-results-list">
+          <!-- Dynamically populated by JS -->
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Main Script -->
+  <script src="script.js"></script>
+</body>
+</html>
